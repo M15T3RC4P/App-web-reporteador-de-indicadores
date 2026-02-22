@@ -1,0 +1,1315 @@
+<style>
+    /* ═══════════════════════════════════════════════════════════════════════
+     DESIGN TOKENS — BRANDING EPS
+  ═══════════════════════════════════════════════════════════════════════ */
+    :root {
+        --teal: rgb(46, 156, 157);
+        --teal-dark: rgb(32, 110, 111);
+        --teal-light: rgb(205, 238, 238);
+        --teal-faint: rgb(232, 247, 247);
+        --red: rgb(217, 33, 39);
+        --red-dark: rgb(170, 24, 29);
+        --red-light: rgb(253, 224, 225);
+        --white: #ffffff;
+        --gray-50: #f8f9fa;
+        --gray-100: #f0f2f4;
+        --gray-200: #e2e6ea;
+        --gray-400: #9aa3ad;
+        --gray-600: #4a545e;
+        --gray-800: #1e2630;
+        --coral: rgb(232, 100, 80);
+
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .05);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, .10), 0 2px 6px rgba(0, 0, 0, .06);
+        --shadow-lg: 0 12px 32px rgba(0, 0, 0, .12), 0 4px 10px rgba(0, 0, 0, .07);
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --font-display: 'Syne', sans-serif;
+        --font-body: 'DM Sans', sans-serif;
+        --transition: .18s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+     RESET & BASE
+  ═══════════════════════════════════════════════════════════════════════ */
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        font-family: var(--font-body);
+        background: var(--gray-50);
+        color: var(--gray-800);
+        font-size: 14px;
+        line-height: 1.55;
+        min-height: 100vh;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+     LOADING OVERLAY
+  ═══════════════════════════════════════════════════════════════════════ */
+    #loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(135deg, var(--teal-dark) 0%, var(--teal) 60%, rgb(60, 180, 160) 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity .5s ease, visibility .5s ease;
+    }
+
+    #loading-overlay.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .loading-logo {
+        width: 64px;
+        height: 64px;
+        border: 4px solid rgba(255, 255, 255, .3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+    }
+
+    .loading-text {
+        color: #fff;
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        letter-spacing: .04em;
+        opacity: .9;
+    }
+
+    .loading-sub {
+        color: rgba(255, 255, 255, .65);
+        font-size: .82rem;
+        margin-top: 6px;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+     APP SHELL
+  ═══════════════════════════════════════════════════════════════════════ */
+    #app {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    /* ─── TOP BAR ──────────────────────────────────────────────────────── */
+    .topbar {
+        background: linear-gradient(135deg, var(--teal-dark) 0%, var(--teal) 100%);
+        color: #fff;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        box-shadow: 0 2px 8px rgba(46, 156, 157, .35);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .topbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .logo-placeholder {
+        width: 38px;
+        height: 38px;
+        background: rgba(255, 255, 255, .18);
+        border: 2px dashed rgba(255, 255, 255, .45);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .55rem;
+        color: rgba(255, 255, 255, .7);
+        text-align: center;
+        line-height: 1.2;
+        flex-shrink: 0;
+        cursor: pointer;
+        transition: background var(--transition);
+    }
+
+    .logo-placeholder:hover {
+        background: rgba(255, 255, 255, .28);
+    }
+
+    .topbar-title {
+        font-family: var(--font-display);
+        font-size: 1.02rem;
+        font-weight: 700;
+        letter-spacing: .01em;
+        line-height: 1.25;
+    }
+
+    .topbar-subtitle {
+        font-size: .72rem;
+        opacity: .75;
+        font-weight: 400;
+        letter-spacing: .03em;
+    }
+
+    .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .btn-print {
+        background: var(--red);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 9px 20px;
+        font-family: var(--font-body);
+        font-size: .82rem;
+        font-weight: 600;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+        box-shadow: 0 2px 8px rgba(217, 33, 39, .35);
+    }
+
+    .btn-print:hover:not(:disabled) {
+        background: var(--red-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(217, 33, 39, .45);
+    }
+
+    .btn-print:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-print svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Badge de resultados */
+    .results-badge {
+        background: rgba(255, 255, 255, .2);
+        border: 1px solid rgba(255, 255, 255, .3);
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: .78rem;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    /* ─── MAIN LAYOUT ──────────────────────────────────────────────────── */
+    .main {
+        flex: 1;
+        padding: 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    /* ─── PRESTADOR CARD ───────────────────────────────────────────────── */
+    .card {
+        background: #fff;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--gray-200);
+        /* overflow: visible es necesario para que los dropdowns de filtros
+           no queden cortados por el borde del card */
+        overflow: visible;
+    }
+
+    .card-header {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--gray-100);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .card-header-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--teal);
+        flex-shrink: 0;
+    }
+
+    .card-header-title {
+        font-family: var(--font-display);
+        font-size: .82rem;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--teal-dark);
+    }
+
+    .card-body {
+        padding: 20px;
+    }
+
+    /* Grid de inputs del prestador */
+    .prestador-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 14px;
+    }
+
+    @media (max-width: 680px) {
+        .prestador-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ─── FORM INPUTS ──────────────────────────────────────────────────── */
+    .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .field-label {
+        font-size: .72rem;
+        font-weight: 600;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: var(--gray-600);
+    }
+
+    .field-input {
+        padding: 9px 12px;
+        border: 1.5px solid var(--gray-200);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-body);
+        font-size: .88rem;
+        color: var(--gray-800);
+        background: var(--gray-50);
+        transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+        width: 100%;
+    }
+
+    .field-input:focus {
+        outline: none;
+        border-color: var(--teal);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(46, 156, 157, .12);
+    }
+
+    .field-input::placeholder {
+        color: var(--gray-400);
+    }
+
+    /* ─── FILTERS SECTION ──────────────────────────────────────────────── */
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+        /* overflow visible permite que los dropdowns sobresalgan del grid */
+        overflow: visible;
+    }
+
+    /* ─── MULTISELECT CUSTOM ───────────────────────────────────────────── */
+    .ms-wrapper {
+        position: relative;
+        /* z-index elevado para que el wrapper esté por encima de la tabla */
+        z-index: 50;
+    }
+
+    .ms-trigger {
+        width: 100%;
+        padding: 9px 36px 9px 12px;
+        border: 1.5px solid var(--gray-200);
+        border-radius: var(--radius-sm);
+        background: var(--gray-50);
+        font-family: var(--font-body);
+        font-size: .88rem;
+        color: var(--gray-800);
+        cursor: pointer;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        position: relative;
+    }
+
+    .ms-trigger:focus {
+        outline: none;
+        border-color: var(--teal);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(46, 156, 157, .12);
+    }
+
+    .ms-trigger.open {
+        border-color: var(--teal);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(46, 156, 157, .12);
+    }
+
+    .ms-trigger .chevron {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        color: var(--gray-400);
+        transition: transform var(--transition);
+        pointer-events: none;
+        flex-shrink: 0;
+    }
+
+    .ms-trigger.open .chevron {
+        transform: translateY(-50%) rotate(180deg);
+    }
+
+    .ms-trigger-text {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ms-trigger-text.placeholder {
+        color: var(--gray-400);
+    }
+
+    .ms-badge {
+        background: var(--teal);
+        color: #fff;
+        border-radius: 10px;
+        padding: 1px 7px;
+        font-size: .7rem;
+        font-weight: 700;
+        margin-right: 6px;
+        flex-shrink: 0;
+    }
+
+    .ms-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1.5px solid var(--teal);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        /* z-index muy alto para sobresalir de cualquier otro elemento */
+        z-index: 1000;
+        overflow: hidden;
+        display: none;
+        animation: dropIn .15s ease;
+        /* min-width garantiza anchura mínima útil aunque el campo sea estrecho */
+        min-width: 220px;
+    }
+
+    .ms-dropdown.open {
+        display: block;
+    }
+
+    @keyframes dropIn {
+        from {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .ms-search {
+        width: 100%;
+        padding: 9px 12px 9px 34px;
+        border: none;
+        border-bottom: 1px solid var(--gray-100);
+        font-family: var(--font-body);
+        font-size: .85rem;
+        background: var(--teal-faint);
+        color: var(--gray-800);
+    }
+
+    .ms-search:focus {
+        outline: none;
+    }
+
+    .ms-search-icon {
+        position: absolute;
+        left: 10px;
+        top: 9px;
+        width: 15px;
+        height: 15px;
+        color: var(--teal);
+        pointer-events: none;
+    }
+
+    .ms-search-wrap {
+        position: relative;
+    }
+
+    .ms-actions {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .ms-action-btn {
+        flex: 1;
+        padding: 5px 8px;
+        border: none;
+        background: none;
+        font-size: .72rem;
+        font-weight: 600;
+        color: var(--teal-dark);
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        transition: background var(--transition);
+    }
+
+    .ms-action-btn:hover {
+        background: var(--teal-faint);
+    }
+
+    .ms-action-btn:not(:last-child) {
+        border-right: 1px solid var(--gray-100);
+    }
+
+    .ms-list {
+        max-height: 200px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .ms-list::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .ms-list::-webkit-scrollbar-thumb {
+        background: var(--teal-light);
+        border-radius: 4px;
+    }
+
+    .ms-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: .85rem;
+        transition: background var(--transition);
+        user-select: none;
+    }
+
+    .ms-item:hover {
+        background: var(--teal-faint);
+    }
+
+    .ms-item.selected {
+        background: rgba(46, 156, 157, .08);
+    }
+
+    .ms-checkbox {
+        width: 15px;
+        height: 15px;
+        border: 2px solid var(--gray-400);
+        border-radius: 3px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition);
+    }
+
+    .ms-item.selected .ms-checkbox {
+        background: var(--teal);
+        border-color: var(--teal);
+    }
+
+    .ms-checkbox svg {
+        display: none;
+        width: 10px;
+        height: 10px;
+        color: #fff;
+    }
+
+    .ms-item.selected .ms-checkbox svg {
+        display: block;
+    }
+
+    .ms-item-label {
+        flex: 1;
+        line-height: 1.3;
+    }
+
+    .ms-empty {
+        padding: 12px;
+        text-align: center;
+        color: var(--gray-400);
+        font-size: .82rem;
+    }
+
+    /* ─── FILTER ACTIONS ───────────────────────────────────────────────── */
+    .filter-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .btn-secondary {
+        padding: 8px 18px;
+        border: 1.5px solid var(--gray-200);
+        border-radius: var(--radius-sm);
+        background: #fff;
+        color: var(--gray-600);
+        font-family: var(--font-body);
+        font-size: .82rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition);
+    }
+
+    .btn-secondary:hover {
+        border-color: var(--teal);
+        color: var(--teal);
+        background: var(--teal-faint);
+    }
+
+    .btn-primary {
+        padding: 8px 18px;
+        border: none;
+        border-radius: var(--radius-sm);
+        background: var(--teal);
+        color: #fff;
+        font-family: var(--font-body);
+        font-size: .82rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all var(--transition);
+        box-shadow: 0 2px 8px rgba(46, 156, 157, .3);
+    }
+
+    .btn-primary:hover {
+        background: var(--teal-dark);
+        box-shadow: 0 4px 12px rgba(46, 156, 157, .4);
+    }
+
+    /* ─── RESULTS SECTION ──────────────────────────────────────────────── */
+    .results-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .results-title {
+        font-family: var(--font-display);
+        font-size: .88rem;
+        font-weight: 700;
+        color: var(--gray-600);
+        letter-spacing: .05em;
+        text-transform: uppercase;
+    }
+
+    .results-count {
+        font-size: .8rem;
+        color: var(--teal-dark);
+        font-weight: 600;
+    }
+
+    /* ─── TABLE ────────────────────────────────────────────────────────── */
+    .table-wrap {
+        overflow-x: auto;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--gray-200);
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        font-size: .82rem;
+    }
+
+    .data-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .data-table th {
+        padding: 11px 14px;
+        /* Encabezado centrado */
+        text-align: center;
+        background: var(--teal-dark);
+        color: #fff;
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: .72rem;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        border-right: 1px solid rgba(255, 255, 255, .12);
+    }
+
+    .data-table th:last-child {
+        border-right: none;
+    }
+
+    .data-table td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--gray-100);
+        /* Centrado vertical y horizontal por defecto */
+        vertical-align: middle;
+        text-align: center;
+        line-height: 1.4;
+    }
+
+    .data-table tbody tr:hover td {
+        background: var(--teal-faint);
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .td-num {
+        font-family: var(--font-display);
+        font-weight: 700;
+        color: var(--teal-dark);
+        text-align: center;
+    }
+
+    .td-code {
+        font-family: monospace;
+        font-size: .78rem;
+        color: var(--gray-600);
+        background: var(--gray-100);
+        border-radius: 4px;
+        padding: 2px 6px;
+        white-space: nowrap;
+    }
+
+    .td-formula {
+        font-size: .78rem;
+        color: var(--gray-600);
+        white-space: pre-line;
+        max-width: 280px;
+    }
+
+    .td-meta {
+        max-width: 160px;
+    }
+
+    /* Clasificación badge */
+    .badge-clasif {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: .7rem;
+        font-weight: 600;
+        background: var(--teal-light);
+        color: var(--teal-dark);
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 52px 20px;
+        color: var(--gray-400);
+    }
+
+    .empty-state svg {
+        width: 48px;
+        height: 48px;
+        opacity: .35;
+        margin-bottom: 12px;
+    }
+
+    .empty-state p {
+        font-size: .92rem;
+        font-weight: 500;
+    }
+
+    .empty-state span {
+        font-size: .8rem;
+    }
+
+    /* Error state */
+    .error-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--red);
+    }
+
+    .error-state svg {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 10px;
+        opacity: .6;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+     MODAL POST-IMPRESIÓN
+  ═══════════════════════════════════════════════════════════════════════ */
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(30, 38, 48, .55);
+        backdrop-filter: blur(4px);
+        z-index: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity .25s ease, visibility .25s ease;
+    }
+
+    .modal-backdrop.open {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .modal {
+        background: #fff;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        width: min(460px, 92vw);
+        overflow: hidden;
+        transform: scale(.94) translateY(8px);
+        transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    .modal-backdrop.open .modal {
+        transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, var(--teal-dark), var(--teal));
+        padding: 20px 24px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .modal-icon {
+        width: 38px;
+        height: 38px;
+        background: rgba(255, 255, 255, .2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .modal-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .modal-title {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .modal-subtitle {
+        font-size: .8rem;
+        opacity: .8;
+    }
+
+    .modal-body {
+        padding: 22px 24px;
+        color: var(--gray-600);
+        font-size: .9rem;
+        line-height: 1.6;
+    }
+
+    .modal-footer {
+        padding: 14px 24px 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .btn-modal-continue {
+        padding: 10px 22px;
+        background: var(--teal);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font-body);
+        font-weight: 600;
+        font-size: .88rem;
+        cursor: pointer;
+        transition: background var(--transition);
+    }
+
+    .btn-modal-continue:hover {
+        background: var(--teal-dark);
+    }
+
+    .btn-modal-edit {
+        padding: 10px 22px;
+        background: #fff;
+        color: var(--gray-600);
+        border: 1.5px solid var(--gray-200);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-body);
+        font-weight: 500;
+        font-size: .88rem;
+        cursor: pointer;
+        transition: all var(--transition);
+    }
+
+    .btn-modal-edit:hover {
+        border-color: var(--teal);
+        color: var(--teal);
+    }
+
+    /* ─── SPACING UTILITY ──────────────────────────────────────────────── */
+    .section-gap {
+        margin-bottom: 18px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+     PAGINACIÓN
+   ═══════════════════════════════════════════════════════════════════════ */
+    .pagination-wrap {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 24px 24px;
+    }
+
+    .pagination-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px 20px;
+        background: #fff;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .pag-info {
+        font-size: .82rem;
+        color: var(--gray-600);
+    }
+
+    .pag-info strong {
+        color: var(--teal-dark);
+    }
+
+    .pag-buttons {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .pag-btn {
+        min-width: 34px;
+        height: 34px;
+        padding: 0 10px;
+        border: 1.5px solid var(--gray-200);
+        border-radius: var(--radius-sm);
+        background: #fff;
+        color: var(--gray-600);
+        font-family: var(--font-body);
+        font-size: .82rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition);
+        white-space: nowrap;
+    }
+
+    .pag-btn:hover:not(:disabled) {
+        border-color: var(--teal);
+        color: var(--teal);
+        background: var(--teal-faint);
+    }
+
+    .pag-btn.active {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #fff;
+        font-weight: 700;
+    }
+
+    .pag-btn:disabled {
+        opacity: .4;
+        cursor: not-allowed;
+    }
+
+    .pag-ellipsis {
+        padding: 0 6px;
+        color: var(--gray-400);
+        font-size: .88rem;
+        user-select: none;
+    }
+
+    /* Ocultar sección de impresión en pantalla */
+    #print-section {
+        display: none;
+    }
+
+    /* Ocultar pie fijo en pantalla */
+    .print-page-footer {
+        display: none;
+    }
+
+    /* Ocultar última hoja en pantalla */
+    .print-last-page {
+        display: none;
+    }
+
+    /* .no-print se oculta en @media print (ver más abajo) */
+
+    /* ═══════════════════════════════════════════════════════════════════════
+     ██  PRINT STYLES  ██
+     Target: A4 Horizontal, márgenes estrechos
+     Formato: GAS-GCR-F-63 Ver 02
+  ═══════════════════════════════════════════════════════════════════════ */
+    @media print {
+
+        /* — Configuración de página —
+          */
+        @page {
+            size: A4 landscape;
+            margin: 1mm 10mm 12mm 10mm;
+            /* 12mm inferior para el footer fijo */
+        }
+
+        /* Ocultar TODO lo de la interfaz web */
+        body {
+            background: #fff;
+            /* Fuente ligeramente reducida para maximizar densidad en PDF */
+            font-size: 6pt;
+            font-family: Arial, sans-serif;
+            color: #000;
+        }
+
+        #app {
+            display: none !important;
+        }
+
+        .topbar,
+        .main>.card:first-child,
+        .main>.card:nth-child(2),
+        .filter-actions,
+        .results-header,
+        .btn-print,
+        .modal-backdrop,
+        #loading-overlay,
+        .ms-dropdown,
+        .no-print,
+        .pagination-wrap {
+            display: none !important;
+        }
+
+        /* Mostrar sección de impresión;
+           margin/padding 0 evita el espacio vacío inicial */
+        #print-section {
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Última hoja: datos del prestador + firma */
+        .print-last-page {
+            display: block !important;
+            break-before: auto;
+            page-break-before: auto;
+            margin-top: 6mm;
+        }
+
+        .main {
+            padding: 0;
+            max-width: none;
+        }
+
+        /* ── Encabezado del PDF ──────────────────────────────────────────────
+       Se repite automáticamente en CADA PÁGINA porque está dentro de
+       <thead>. El navegador respeta `thead { display: table-header-group }`
+       al imprimir, lo que garantiza la repetición sin JS adicional.
+    ── */
+        .print-header {
+            display: flex;
+            align-items: stretch;
+            width: 100%;
+            margin-bottom: 2.5mm;
+        }
+
+        /* ── Logo de empresa ─────────────────────────────────────────────────
+       CÓMO INSERTAR EL LOGO:
+       1. En index.html busca: <div class="ph-logo" id="ph-logo-img">
+       2. Reemplaza el contenido por:
+            <img src="https://aidaascencio.com/wp-content/uploads/2023/01/Logo-asmetsalud-400x400-1.png" alt="Logo EPS"
+                 style="max-width:100%; max-height:13mm; object-fit:contain;" />
+       3. La URL puede ser un enlace público de Drive:
+            https://drive.google.com/uc?export=view&id=ID_DEL_ARCHIVO
+    ── */
+        .ph-logo {
+            width: 18mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5mm;
+            font-size: 4.5pt;
+            color: #555;
+            text-align: center;
+        }
+
+        /* Estilos para cuando el logo sea una imagen real */
+        .ph-logo img {
+            max-width: 100%;
+            max-height: 13mm;
+            object-fit: contain;
+        }
+
+        .ph-center {
+            flex: 1;
+            text-align: center;
+            padding: 1mm 2mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0.5mm;
+        }
+
+        .ph-center .ph-macro {
+            font-size: 4.2pt;
+            letter-spacing: .02em;
+            font-style: italic;
+        }
+
+        .ph-center .ph-proceso {
+            font-size: 4.2pt;
+            font-style: italic;
+        }
+
+        .ph-center .ph-ndoc {
+            font-size: 4.2pt;
+            font-style: italic;
+        }
+
+        .ph-center .ph-code {
+            font-size: 4.2pt;
+            font-style: italic;
+        }
+
+        .ph-right {
+            width: 20mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 4.5pt;
+            text-align: center;
+            padding: 1mm;
+            color: solid #000;
+        }
+
+        /* ── Datos del prestador en el PDF ── */
+        .print-prestador {
+            margin-bottom: 2.5mm;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .pp-field {
+            padding: 1mm 2mm;
+            font-size: 6pt;
+        }
+
+        .pp-field:last-child {
+            border-right: none;
+        }
+
+        .pp-label {
+            font-weight: bold;
+            font-size: 5pt;
+            text-transform: uppercase;
+            color: #555;
+            margin-bottom: 0.5mm;
+        }
+
+        /* ── Tabla de indicadores ── */
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            /* Fuente reducida en PDF para mayor densidad */
+            font-size: 6pt;
+            page-break-inside: auto;
+            /* table-layout: fixed + anchos en <th> evitan desbordamientos laterales */
+            table-layout: fixed;
+        }
+
+        /* El <thead> se repite en cada hoja automáticamente */
+        .print-table thead {
+            display: table-header-group;
+        }
+
+        /* tfoot se oculta (el footer fijo de position:fixed lo reemplaza) */
+        .print-table tfoot {
+            display: none;
+        }
+
+        .print-table thead th {
+            background: rgb(46, 110, 111) !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            color: #fff !important;
+            padding: 1.5mm 1mm;
+            /* Encabezados centrados en PDF */
+            text-align: center;
+            font-size: 5pt;
+            border: .5pt solid #fff;
+            font-weight: bold;
+            /* Salto de palabra largo en columnas de ancho fijo */
+            word-break: break-word;
+            white-space: normal;
+        }
+
+        .print-table td {
+            padding: 1mm 1mm;
+            border: .5pt solid #ccc;
+            /* Centrado vertical y horizontal en PDF */
+            vertical-align: middle;
+            text-align: center;
+            line-height: 1.15;
+            word-break: break-word;
+            font-size: 5.5pt;
+        }
+
+        .print-table tbody tr:nth-child(even) td {
+            background: rgb(232, 247, 247) !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* Saltos de página inteligentes: no cortar una fila a la mitad */
+        .print-table tbody tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            /* Propiedad moderna equivalente */
+        }
+
+        /* Evitar hoja en blanco al final:
+           Ningún elemento genera un salto de página DESPUÉS de él */
+        .print-firma-final {
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        #print-section {
+            /* Sin salto de página al finalizar la sección */
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        /* ── Firma de responsable al final del documento ── */
+        .print-firma-final {
+            margin-top: 6mm;
+            padding: 3mm 5mm;
+            display: flex;
+            gap: 15mm;
+            font-size: 5.5pt;
+        }
+
+        .pff-col {
+            flex: 1;
+        }
+
+        .pff-label {
+            font-weight: bold;
+            margin-bottom: 4mm;
+        }
+
+        .pff-line {
+            border-bottom: .2pt solid #000;
+        }
+
+        /* Ocultar tabla de la UI, mostrar la de impresión */
+        .table-wrap,
+        .data-table {
+            display: none !important;
+        }
+
+        /* ── PIE DE PÁGINA FIJO AL BORDE INFERIOR ─────────────────────────
+       position: fixed hace que este div aparezca en el fondo de CADA
+       página al imprimir con Chrome o Edge (motor Blink).
+       El margen inferior de @page (12mm) reserva el espacio necesario.
+    ── */
+        .print-page-footer {
+            display: block !important;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1mm 6mm;
+            background: #fff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            font-size: 4pt;
+            text-align: center;
+            color: #555;
+        }
+
+        .print-page-footer .pf-line1 {
+            font-size: 4.2pt;
+            margin-bottom: 0.5mm;
+            font-style: italic;
+        }
+
+        .print-page-footer .pf-line2 {
+            font-size: 4pt;
+            font-style: italic;
+        }
+
+        /* Ocultar el <tfoot> de la tabla cuando el footer fijo esté activo
+       para evitar duplicados visibles en la última página */
+        .print-table tfoot {
+            display: none;
+        }
+    }
+</style>

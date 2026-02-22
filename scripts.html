@@ -1,0 +1,643 @@
+<script>
+    /* ═══════════════════════════════════════════════════════════════════════════
+       ESTADO GLOBAL
+    ═══════════════════════════════════════════════════════════════════════════ */
+    let ALL_RECORDS = [];   // Todos los registros de la BD (cargados una vez)
+    let FILTER_OPTIONS = {};   // Opciones únicas por campo
+    let ACTIVE_FILTERS = {     // Selecciones activas en cada multiselect
+        codigo: [],
+        nombre: [],
+        clasificacion: [],
+        aplicaA: [],
+        grupoRiesgo: []
+    };
+    let FILTERED_RECORDS = []; // Subconjunto actual filtrado
+
+    // Fixed Lists as required
+    const FIXED_APLICA_A = [
+        'COMPLEJIDAD - MEDIANA', 'COMPLEJIDAD - ALTA', 'COMPLEJIDAD - BAJA',
+        'AMBITO - HOSPITALARIO', 'AMBITO - AMBULATORIO', 'AMBITO - DOMICILIARIO',
+        'TRANSPORTE ASISTENCIAL', 'TRANSPORTE NO ASISTENCIAL',
+        'HOGAR DE PASO', 'EXTRAMURAL', 'INTRAMURAL',
+        'MEDICAMENTOS', 'TODO CONTRATO', 'INSUMOS'
+    ];
+
+    const FIXED_GRUPO_RIESGO = [
+        'NA - NO APLICA', 'MP - MATERNO PERINATAL', 'RP - RPMS', 'RC - RCVM',
+        'CA - CANCER', 'ER - ERC', 'AR - ARTRITIS', 'HE - HEMOFILIA',
+        'VI - VIH', 'EH - EHR-GAUCHER', 'HP - HEPATITIS C',
+        'SM - SALUD MENTAL', 'SP - SALUD PUBLICA', 'VU - VULNERABLE',
+        'GR - GESTIÓN PRIMARIA', 'EBS - EQUIPOS BÁSICOS DE SALUD',
+        'GP - GESTION PRIMARIA', 'RI - RIAMP', 'EP - EPOC', 'TP - TRASPLANTE'
+    ];
+
+    // ── Paginación ──────────────────────────────────────────────────────────
+    const PAGE_SIZE = 25;      // Registros por página en pantalla
+    let CURRENT_PAGE = 1;      // Página activa
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       INICIALIZACIÓN — llama al servidor GAS
+    ═══════════════════════════════════════════════════════════════════════════ */
+    (function init() {
+        // Verificar si estamos corriendo en GAS (google.script disponible)
+        // o en modo de desarrollo local con datos de prueba
+        if (typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(onDataLoaded)
+                .withFailureHandler(onDataError)
+                .getAllData();
+        } else {
+            // Modo demo: datos de prueba para desarrollo/vista previa
+            console.warn('[DEMO] google.script no disponible. Usando datos de prueba.');
+            setTimeout(() => onDataLoaded(getDemoData()), 800);
+        }
+    })();
+
+    /* ─── Callback: datos cargados correctamente ──────────────────────────── */
+    function onDataLoaded(response) {
+        document.getElementById('loading-overlay').classList.add('hidden');
+
+        if (!response.success) {
+            onDataError({ message: response.error });
+            return;
+        }
+
+        ALL_RECORDS = response.records;
+        FILTER_OPTIONS = response.filterOptions;
+
+        buildFilters();
+        CURRENT_PAGE = 1;
+        renderPage(ALL_RECORDS);
+        updateBadge(ALL_RECORDS.length);
+    }
+
+    /* ─── Callback: error en la carga ────────────────────────────────────── */
+    function onDataError(err) {
+        document.getElementById('loading-overlay').classList.add('hidden');
+        document.getElementById('table-body').innerHTML = `
+    <tr><td colspan="8">
+      <div class="error-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <p>Error al cargar los datos</p>
+        <span>${err.message || 'Verifique la conexión con Google Sheets.'}</span>
+      </div>
+    </td></tr>`;
+        document.getElementById('filters-grid').innerHTML =
+            `<div class="error-state" style="grid-column:1/-1"><p>No se pudieron cargar los filtros.</p></div>`;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       CONSTRUCCIÓN DINÁMICA DE FILTROS MULTISELECT
+    ═══════════════════════════════════════════════════════════════════════════ */
+    const FILTER_DEFS = [
+        { key: 'codigo', label: 'Código' },
+        { key: 'nombre', label: 'Nombre' },
+        { key: 'clasificacion', label: 'Clasificación' },
+        { key: 'aplicaA', label: 'Aplica a' },
+        { key: 'grupoRiesgo', label: 'Grupo de Riesgo' }
+    ];
+
+    function getOptionsForKey(key) {
+        if (key === 'aplicaA') return FIXED_APLICA_A;
+        if (key === 'grupoRiesgo') return FIXED_GRUPO_RIESGO;
+        return FILTER_OPTIONS[key] || [];
+    }
+
+    function buildFilters() {
+        const grid = document.getElementById('filters-grid');
+        grid.innerHTML = '';
+
+        FILTER_DEFS.forEach(def => {
+            const options = getOptionsForKey(def.key);
+            grid.appendChild(createMultiselect(def.key, def.label, options));
+        });
+
+        // Cerrar dropdowns al hacer clic fuera
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.ms-wrapper')) {
+                document.querySelectorAll('.ms-dropdown.open').forEach(d => {
+                    d.classList.remove('open');
+                    d.closest('.ms-wrapper').querySelector('.ms-trigger').classList.remove('open');
+                });
+            }
+        });
+    }
+
+    /* ─── Crear un multiselect completo ─────────────────────────────────── */
+    function createMultiselect(key, label, options) {
+        const wrap = document.createElement('div');
+        wrap.className = 'field-group';
+
+        const lbl = document.createElement('label');
+        lbl.className = 'field-label';
+        lbl.textContent = label;
+        wrap.appendChild(lbl);
+
+        const msWrap = document.createElement('div');
+        msWrap.className = 'ms-wrapper';
+        msWrap.dataset.key = key;
+
+        const trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'ms-trigger';
+        trigger.setAttribute('aria-haspopup', 'listbox');
+        trigger.setAttribute('aria-expanded', 'false');
+        trigger.innerHTML = `
+    <span class="ms-trigger-text placeholder" data-placeholder="Todos (${options.length})">
+      Todos (${options.length})
+    </span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>`;
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'ms-dropdown';
+        dropdown.setAttribute('role', 'listbox');
+
+        const searchWrap = document.createElement('div');
+        searchWrap.className = 'ms-search-wrap';
+        searchWrap.style.position = 'relative';
+        searchWrap.innerHTML = `
+    <svg class="ms-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input class="ms-search" type="text" placeholder="Buscar ${label.toLowerCase()}…" data-ms-key="${key}" />`;
+
+        const actions = document.createElement('div');
+        actions.className = 'ms-actions';
+        actions.innerHTML = `
+    <button type="button" class="ms-action-btn" onclick="selectAllOptions('${key}')">Todos</button>
+    <button type="button" class="ms-action-btn" onclick="clearOptions('${key}')">Ninguno</button>`;
+
+        const list = document.createElement('div');
+        list.className = 'ms-list';
+        list.setAttribute('role', 'group');
+        list.dataset.msKey = key;
+
+        renderOptionsList(list, key, options, '');
+
+        dropdown.appendChild(searchWrap);
+        dropdown.appendChild(actions);
+        dropdown.appendChild(list);
+
+        msWrap.appendChild(trigger);
+        msWrap.appendChild(dropdown);
+        wrap.appendChild(msWrap);
+
+        // ── Eventos ──────────────────────────────────────────────────────────
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = dropdown.classList.contains('open');
+            document.querySelectorAll('.ms-dropdown.open').forEach(d => {
+                if (d !== dropdown) {
+                    d.classList.remove('open');
+                    d.closest('.ms-wrapper').querySelector('.ms-trigger').classList.remove('open');
+                }
+            });
+            dropdown.classList.toggle('open', !isOpen);
+            trigger.classList.toggle('open', !isOpen);
+            trigger.setAttribute('aria-expanded', String(!isOpen));
+            if (!isOpen) {
+                setTimeout(() => dropdown.querySelector('.ms-search').focus(), 80);
+            }
+        });
+
+        const searchInput = searchWrap.querySelector('.ms-search');
+        searchInput.addEventListener('input', (e) => {
+            renderOptionsList(list, key, getOptionsForKey(key), e.target.value.toLowerCase());
+        });
+        searchInput.addEventListener('click', e => e.stopPropagation());
+
+        return wrap;
+    }
+
+    /* ─── Renderizar lista de opciones del multiselect ────────────────────── */
+    function renderOptionsList(listEl, key, options, searchTerm) {
+        const filtered = searchTerm
+            ? options.filter(o => o.toLowerCase().includes(searchTerm))
+            : options;
+
+        listEl.innerHTML = '';
+        if (filtered.length === 0) {
+            listEl.innerHTML = `<div class="ms-empty">Sin resultados para "${searchTerm}"</div>`;
+            return;
+        }
+
+        filtered.forEach(opt => {
+            const isSelected = ACTIVE_FILTERS[key].includes(opt);
+            const item = document.createElement('div');
+            item.className = `ms-item${isSelected ? ' selected' : ''}`;
+            item.setAttribute('role', 'option');
+            item.setAttribute('aria-selected', String(isSelected));
+            item.dataset.value = opt;
+            item.dataset.msKey = key;
+            item.innerHTML = `
+      <div class="ms-checkbox">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="2 6 5 9 10 3"/>
+        </svg>
+      </div>
+      <span class="ms-item-label">${escapeHtml(opt)}</span>`;
+
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleOption(key, opt, item);
+                updateTriggerLabel(key);
+                applyFilters(); // Filtrado reactivo en tiempo real
+            });
+
+            listEl.appendChild(item);
+        });
+    }
+
+    /* ─── Toggle de opción ───────────────────────────────────────────────── */
+    function toggleOption(key, value, itemEl) {
+        const arr = ACTIVE_FILTERS[key];
+        const idx = arr.indexOf(value);
+        if (idx === -1) {
+            arr.push(value);
+            itemEl.classList.add('selected');
+            itemEl.setAttribute('aria-selected', 'true');
+        } else {
+            arr.splice(idx, 1);
+            itemEl.classList.remove('selected');
+            itemEl.setAttribute('aria-selected', 'false');
+        }
+    }
+
+    /* ─── Seleccionar / limpiar todas las opciones de un filtro ───────────── */
+    function selectAllOptions(key) {
+        ACTIVE_FILTERS[key] = [...getOptionsForKey(key)];
+        refreshMultiselectUI(key);
+        applyFilters();
+    }
+    function clearOptions(key) {
+        ACTIVE_FILTERS[key] = [];
+        refreshMultiselectUI(key);
+        applyFilters();
+    }
+
+    /* ─── Refrescar UI del multiselect tras cambio programático ──────────── */
+    function refreshMultiselectUI(key) {
+        const wrapper = document.querySelector(`.ms-wrapper[data-key="${key}"]`);
+        if (!wrapper) return;
+        const list = wrapper.querySelector('.ms-list');
+        const search = wrapper.querySelector('.ms-search');
+        const term = search ? search.value.toLowerCase() : '';
+        renderOptionsList(list, key, getOptionsForKey(key), term);
+        updateTriggerLabel(key);
+    }
+
+    /* ─── Actualizar etiqueta del trigger ───────────────────────────────── */
+    function updateTriggerLabel(key) {
+        const wrapper = document.querySelector(`.ms-wrapper[data-key="${key}"]`);
+        if (!wrapper) return;
+        const textSpan = wrapper.querySelector('.ms-trigger-text');
+        const selected = ACTIVE_FILTERS[key];
+        const total = getOptionsForKey(key).length;
+
+        if (selected.length === 0) {
+            textSpan.className = 'ms-trigger-text placeholder';
+            textSpan.innerHTML = `Todos (${total})`;
+        } else if (selected.length === 1) {
+            textSpan.className = 'ms-trigger-text';
+            textSpan.innerHTML = `<span class="ms-badge">1</span>${escapeHtml(selected[0])}`;
+        } else {
+            textSpan.className = 'ms-trigger-text';
+            textSpan.innerHTML = `<span class="ms-badge">${selected.length}</span>${selected.length} seleccionados`;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       LÓGICA DE FILTRADO (en el cliente — muy rápida)
+    ═══════════════════════════════════════════════════════════════════════════ */
+    function applyFilters() {
+        FILTERED_RECORDS = ALL_RECORDS.filter(rec => {
+            const okCodigo = ACTIVE_FILTERS.codigo.length === 0
+                || ACTIVE_FILTERS.codigo.includes(rec.codigo);
+            const okNombre = ACTIVE_FILTERS.nombre.length === 0
+                || ACTIVE_FILTERS.nombre.includes(rec.nombre);
+            const okClasif = ACTIVE_FILTERS.clasificacion.length === 0
+                || ACTIVE_FILTERS.clasificacion.includes(rec.clasificacion);
+
+            // "Aplica a" — ACUMULATIVO: TODOS los seleccionados deben estar en la celda
+            const okAplica = ACTIVE_FILTERS.aplicaA.length === 0
+                || ACTIVE_FILTERS.aplicaA.every(sel => {
+                    const cellVal = (rec.aplicaA || '').toUpperCase();
+                    return cellVal.includes(sel.trim().toUpperCase());
+                });
+
+            // "Grupo de Riesgo" — INCLUSIVO: AL MENOS UNO debe coincidir
+            const okRiesgo = ACTIVE_FILTERS.grupoRiesgo.length === 0
+                || ACTIVE_FILTERS.grupoRiesgo.some(sel => {
+                    const cellVal = (rec.grupoRiesgo || '').toUpperCase();
+                    return cellVal.includes(sel.trim().toUpperCase());
+                });
+
+            return okCodigo && okNombre && okClasif && okAplica && okRiesgo;
+        });
+
+        renderPage(FILTERED_RECORDS);
+        updateBadge(FILTERED_RECORDS.length);
+    }
+
+    /* ─── Limpiar todos los filtros ───────────────────────────────────────── */
+    function clearAllFilters() {
+        FILTER_DEFS.forEach(def => {
+            ACTIVE_FILTERS[def.key] = [];
+            refreshMultiselectUI(def.key);
+        });
+        CURRENT_PAGE = 1;
+        applyFilters();
+    }
+
+    /* ─── Renderiza la página activa de la tabla (pantalla) ───────────────── */
+    function renderPage(records) {
+        const tbody = document.getElementById('table-body');
+        const printBtn = document.getElementById('btn-print');
+
+        if (records.length === 0) {
+            tbody.innerHTML = `
+      <tr><td colspan="8">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <p>No hay indicadores con los criterios establecidos.</p>
+          <span>Intente ampliar los filtros de búsqueda.</span>
+        </div>
+      </td></tr>`;
+            printBtn.disabled = true;
+            buildPagination(0, 0);     // Limpia la paginación
+            return;
+        }
+
+        printBtn.disabled = false;
+
+        const totalPages = Math.ceil(records.length / PAGE_SIZE);
+        CURRENT_PAGE = Math.min(CURRENT_PAGE, totalPages); // Protege desborde
+        const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
+        const slice = records.slice(start, start + PAGE_SIZE);
+
+        tbody.innerHTML = slice.map((rec, i) => `
+    <tr>
+      <td class="td-num">${escapeHtml(rec.numero)}</td>
+      <td><span class="td-code">${escapeHtml(rec.codigo)}</span></td>
+      <td>${escapeHtml(rec.nombre)}</td>
+      <td><span class="badge-clasif">${escapeHtml(rec.clasificacion)}</span></td>
+      <td>${escapeHtml(rec.aplicaA)}</td>
+      <td>${escapeHtml(rec.grupoRiesgo)}</td>
+      <td class="td-formula">${escapeHtml(rec.formulaUnificada)}</td>
+      <td class="td-meta">${escapeHtml(rec.metaUnificada)}</td>
+    </tr>`).join('');
+
+        buildPagination(records.length, totalPages);
+    }
+
+    /* Alias para retrocompatibilidad interna */
+    function renderTable(records) { renderPage(records); }
+
+    /* ─── Construye los controles de paginación ────────────────────────────── */
+    function buildPagination(total, totalPages) {
+        const container = document.getElementById('pagination-controls');
+        if (!container) return;
+
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const maxButtons = 7; // Máx. botones numéricos visibles
+        let pages = [];
+
+        if (totalPages <= maxButtons) {
+            pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+        } else {
+            // Siempre primera, última y entorno a la actual
+            const around = new Set([1, totalPages, CURRENT_PAGE,
+                CURRENT_PAGE - 1, CURRENT_PAGE + 1].filter(p => p >= 1 && p <= totalPages));
+            pages = Array.from(around).sort((a, b) => a - b);
+        }
+
+        // Insertar "…" entre saltos
+        const withEllipsis = [];
+        pages.forEach((p, i) => {
+            if (i > 0 && p - pages[i - 1] > 1) withEllipsis.push('…');
+            withEllipsis.push(p);
+        });
+
+        // Rango visible (Ej: "Mostrando 26–50 de 120")
+        const start = (CURRENT_PAGE - 1) * PAGE_SIZE + 1;
+        const end = Math.min(CURRENT_PAGE * PAGE_SIZE, total);
+
+        container.innerHTML = `
+      <div class="pag-info">Mostrando <strong>${start}–${end}</strong> de <strong>${total}</strong></div>
+      <div class="pag-buttons">
+        <button class="pag-btn" onclick="goToPage(${CURRENT_PAGE - 1})" ${CURRENT_PAGE === 1 ? 'disabled' : ''}>
+          ‹ Anterior
+        </button>
+        ${withEllipsis.map(p =>
+            p === '…'
+                ? `<span class="pag-ellipsis">${p}</span>`
+                : `<button class="pag-btn ${p === CURRENT_PAGE ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`
+        ).join('')}
+        <button class="pag-btn" onclick="goToPage(${CURRENT_PAGE + 1})" ${CURRENT_PAGE === totalPages ? 'disabled' : ''}>
+          Siguiente ›
+        </button>
+      </div>`;
+    }
+
+    /* ─── Navegar a una página específica ───────────────────────────────────── */
+    function goToPage(page) {
+        const records = FILTERED_RECORDS.length > 0 || hasActiveFilters()
+            ? FILTERED_RECORDS
+            : ALL_RECORDS;
+        const totalPages = Math.ceil(records.length / PAGE_SIZE);
+        if (page < 1 || page > totalPages) return;
+        CURRENT_PAGE = page;
+        renderPage(records);
+        // Scroll al inicio de la tabla
+        document.getElementById('table-wrap')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    /* ─── ¿Hay algún filtro activo? ─────────────────────────────────────────── */
+    function hasActiveFilters() {
+        return FILTER_DEFS.some(def => ACTIVE_FILTERS[def.key].length > 0);
+    }
+
+    /* ─── Badge de conteo en la topbar ─────────────────────────────────── */
+    function updateBadge(count) {
+        const badge = document.getElementById('badge-count');
+        const label = document.getElementById('results-count-label');
+        badge.textContent = `${count} indicador${count !== 1 ? 'es' : ''}`;
+        label.textContent = count > 0
+            ? `${count} resultado${count !== 1 ? 's' : ''} encontrado${count !== 1 ? 's' : ''}`
+            : '';
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       IMPRESIÓN — generar tabla del PDF e invocar window.print()
+    ═══════════════════════════════════════════════════════════════════════════ */
+    function triggerPrint() {
+        const records = FILTERED_RECORDS.length > 0 ? FILTERED_RECORDS : ALL_RECORDS;
+        if (records.length === 0) return;
+
+        // Rellenar datos del prestador en la sección de impresión
+        document.getElementById('pp-nombre').textContent =
+            document.getElementById('inp-prestador').value.trim() || '—';
+        document.getElementById('pp-nit').textContent =
+            document.getElementById('inp-nit').value.trim() || '—';
+        document.getElementById('pp-sede').textContent =
+            document.getElementById('inp-sede').value.trim() || '—';
+
+        // Poblar tbody de impresión
+        const printTbody = document.getElementById('print-tbody');
+        printTbody.innerHTML = records.map(rec => `
+    <tr>
+      <td style="text-align:center;font-weight:bold;">${escapeHtml(rec.numero)}</td>
+      <td style="font-family:monospace;font-size:6.5pt;">${escapeHtml(rec.codigo)}</td>
+      <td>${escapeHtml(rec.nombre)}</td>
+      <td>${escapeHtml(rec.clasificacion)}</td>
+      <td>${escapeHtml(rec.aplicaA)}</td>
+      <td>${escapeHtml(rec.grupoRiesgo)}</td>
+      <td style="white-space:pre-line;font-size:6.5pt;">${escapeHtml(rec.formulaUnificada)}</td>
+      <td>${escapeHtml(rec.metaUnificada)}</td>
+    </tr>`).join('');
+
+        // Registrar listener de afterprint para mostrar el modal
+        window.addEventListener('afterprint', onAfterPrint, { once: true });
+
+        // Imprimir
+        window.print();
+    }
+
+    /* ─── Callback después de imprimir ──────────────────────────────────── */
+    function onAfterPrint() {
+        setTimeout(() => {
+            document.getElementById('post-print-modal').classList.add('open');
+        }, 200);
+    }
+
+    /* ─── Acciones del modal ─────────────────────────────────────────────── */
+    function modalContinue() {
+        document.getElementById('inp-prestador').value = '';
+        document.getElementById('inp-nit').value = '';
+        document.getElementById('inp-sede').value = '';
+        clearAllFilters();
+        document.getElementById('post-print-modal').classList.remove('open');
+    }
+
+    function modalEdit() {
+        document.getElementById('post-print-modal').classList.remove('open');
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       UTILIDADES
+    ═══════════════════════════════════════════════════════════════════════════ */
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       DATOS DE DEMOSTRACIÓN (solo para entornos sin GAS)
+    ═══════════════════════════════════════════════════════════════════════════ */
+    function getDemoData() {
+        const rawRecords = [
+            {
+                numero: '1', proceso: 'Gestión Contractual', codigo: 'IND-001', version: '1',
+                clasificacion: 'Acceso', aplicaA: 'Prestador IPS', grupoRiesgo: 'MATERNO PERINATAL',
+                nombre: 'Tasa de cobertura de control prenatal',
+                area: 'Salud Materna', normativo: 'Res 3280/2018',
+                formulaNumerador: 'N° gestantes con ≥4 controles prenatales',
+                formulaDenominador: 'Total gestantes captadas en el período',
+                factor: '100', tendencia: 'Ascendente', meta: '≥ 80', unidad: '%', periodicidad: 'Trimestral',
+                fuentes: 'HIS / Historia Clínica', responsables: 'Coordinador Materno',
+                consideraciones: 'Incluir partos antes de semana 37',
+                formulaUnificada: 'Numerador: N° gestantes con ≥4 controles prenatales\n \nDenominador: Total gestantes captadas en el período',
+                metaUnificada: '≥ 80 | % | Trimestral'
+            },
+            {
+                numero: '2', proceso: 'Gestión Contractual', codigo: 'IND-002', version: '1',
+                clasificacion: 'Calidad', aplicaA: 'Prestador IPS', grupoRiesgo: 'HIPERTENSIÓN ARTERIAL',
+                nombre: 'Porcentaje de hipertensos con TA controlada',
+                area: 'Enfermedades Crónicas', normativo: 'Res 3280/2018',
+                formulaNumerador: 'N° de pacientes HTA con TA < 140/90 mmHg',
+                formulaDenominador: 'Total de pacientes HTA en seguimiento',
+                factor: '100', tendencia: 'Ascendente', meta: '≥ 60', unidad: '%', periodicidad: 'Semestral',
+                fuentes: 'Historia Clínica Electrónica', responsables: 'Coordinador Crónicas',
+                consideraciones: 'Medición en consulta de control',
+                formulaUnificada: 'Numerador: N° de pacientes HTA con TA < 140/90 mmHg\n \nDenominador: Total de pacientes HTA en seguimiento',
+                metaUnificada: '≥ 60 | % | Semestral'
+            },
+            {
+                numero: '3', proceso: 'Gestión Contractual', codigo: 'IND-003', version: '2',
+                clasificacion: 'Oportunidad', aplicaA: 'Prestador IPS', grupoRiesgo: 'DIABETES MELLITUS',
+                nombre: 'Oportunidad en consulta de medicina general',
+                area: 'Primer Nivel', normativo: 'Res 5261/1994',
+                formulaNumerador: 'N° de citas de MG asignadas en ≤ 3 días hábiles',
+                formulaDenominador: 'Total de citas de MG solicitadas',
+                factor: '100', tendencia: 'Ascendente', meta: '≥ 90', unidad: '%', periodicidad: 'Mensual',
+                fuentes: 'Sistema de Agendamiento', responsables: 'Coordinador de Acceso',
+                consideraciones: 'Excluir urgencias',
+                formulaUnificada: 'Numerador: N° de citas de MG asignadas en ≤ 3 días hábiles\n \nDenominador: Total de citas de MG solicitadas',
+                metaUnificada: '≥ 90 | % | Mensual'
+            },
+            {
+                numero: '4', proceso: 'Gestión Contractual', codigo: 'IND-004', version: '1',
+                clasificacion: 'Seguridad', aplicaA: 'Prestador IPS', grupoRiesgo: 'POBLACION GENERAL',
+                nombre: 'Tasa de infecciones asociadas a la atención en salud (IAAS)',
+                area: 'Hospitalización', normativo: 'Circ. Ext. 045/2016',
+                formulaNumerador: 'N° de infecciones nosocomiales notificadas',
+                formulaDenominador: 'N° de egresos hospitalarios × 100',
+                factor: '100', tendencia: 'Descendente', meta: '≤ 2', unidad: 'por 100 egresos', periodicidad: 'Mensual',
+                fuentes: 'SIVIGILA / Registros de Infecciones', responsables: 'Comité de Infecciones',
+                consideraciones: 'Incluir únicamente IAAS primarias',
+                formulaUnificada: 'Numerador: N° de infecciones nosocomiales notificadas\n \nDenominador: N° de egresos hospitalarios × 100',
+                metaUnificada: '≤ 2 | por 100 egresos | Mensual'
+            },
+            {
+                numero: '5', proceso: 'Gestión Contractual', codigo: 'IND-005', version: '1',
+                clasificacion: 'Continuidad', aplicaA: 'Prestador IPS', grupoRiesgo: 'CANCER',
+                nombre: 'Cobertura de tamización de cáncer de cuello uterino',
+                area: 'Promoción y Prevención', normativo: 'RIAS 3280/2018',
+                formulaNumerador: 'N° mujeres entre 25-69 años con citología vigente',
+                formulaDenominador: 'Total mujeres entre 25-69 años afiliadas',
+                factor: '100', tendencia: 'Ascendente', meta: '≥ 70', unidad: '%', periodicidad: 'Anual',
+                fuentes: 'HIS / BD Afiliados', responsables: 'Coordinador P y P',
+                consideraciones: 'Citología vigente = realizada en últimos 3 años',
+                formulaUnificada: 'Numerador: N° mujeres entre 25-69 años con citología vigente\n \nDenominador: Total mujeres entre 25-69 años afiliadas',
+                metaUnificada: '≥ 70 | % | Anual'
+            }
+        ];
+
+        const sets = { codigo: [], nombre: [], clasificacion: [], aplicaA: [], grupoRiesgo: [] };
+        rawRecords.forEach(r => {
+            if (!sets.codigo.includes(r.codigo)) sets.codigo.push(r.codigo);
+            if (!sets.nombre.includes(r.nombre)) sets.nombre.push(r.nombre);
+            if (!sets.clasificacion.includes(r.clasificacion)) sets.clasificacion.push(r.clasificacion);
+            if (!sets.aplicaA.includes(r.aplicaA)) sets.aplicaA.push(r.aplicaA);
+            if (!sets.grupoRiesgo.includes(r.grupoRiesgo)) sets.grupoRiesgo.push(r.grupoRiesgo);
+        });
+
+        return {
+            success: true,
+            records: rawRecords,
+            filterOptions: {
+                codigo: sets.codigo.sort(),
+                nombre: sets.nombre.sort(),
+                clasificacion: sets.clasificacion.sort(),
+                aplicaA: sets.aplicaA.sort(),
+                grupoRiesgo: sets.grupoRiesgo.sort()
+            }
+        };
+    }
+</script>

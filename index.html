@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anexo Indicadores Contractuales — EPS</title>
+
+    <!-- Google Fonts: Syne (display) + DM Sans (body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap"
+        rel="stylesheet" />
+
+    <!-- ▶ CSS separado: todos los estilos de pantalla + @media print -->
+    <?!= include('styles') ?>
+</head>
+
+<body>
+
+    <!-- ══════════════════════════════════════════════════════════════════════════
+     LOADING OVERLAY
+══════════════════════════════════════════════════════════════════════════ -->
+    <div id="loading-overlay">
+        <div class="loading-logo"></div>
+        <div class="loading-text">Cargando base de datos</div>
+        <div class="loading-sub">Conectando con Google Sheets…</div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════════
+     APP
+══════════════════════════════════════════════════════════════════════════ -->
+    <div id="app">
+
+        <!-- ── TOP BAR ──────────────────────────────────────────────────────── -->
+        <header class="topbar">
+            <div class="topbar-brand">
+                <img src="https://clinicaospedalemanizales.com/wp-content/uploads/2022/08/asmetsalud-imagen-destacada.png"
+                    alt="Logo EPS" class="ph-logo" id="ph-logo-img" height="50" />
+
+                <div>
+                    <div class="topbar-title">Exporte anexo Indicadores contractuales</div>
+                    <div class="topbar-subtitle">GAS-GCR-F-63 - Gestión de la Contratación de la Red</div>
+                </div>
+            </div>
+            <div class="topbar-actions">
+                <span class="results-badge" id="badge-count">0 indicadores</span>
+                <button class="btn-print" id="btn-print" onclick="triggerPrint()" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Imprimir Anexo
+                </button>
+            </div>
+        </header>
+
+        <!-- ── MAIN ─────────────────────────────────────────────────────────── -->
+        <main class="main">
+
+            <!-- Datos del Prestador -->
+            <div class="card section-gap">
+                <div class="card-header">
+                    <div class="card-header-dot"></div>
+                    <div class="card-header-title">Datos del Prestador</div>
+                </div>
+                <div class="card-body">
+                    <div class="prestador-grid">
+                        <div class="field-group">
+                            <label class="field-label" for="inp-prestador">Nombre del Prestador</label>
+                            <input class="field-input" id="inp-prestador" type="text"
+                                placeholder="Ej. Clínica San José S.A.S." autocomplete="off" />
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label" for="inp-nit">NIT</label>
+                            <input class="field-input" id="inp-nit" type="text" placeholder="Ej. 900.123.456-7"
+                                autocomplete="off" />
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label" for="inp-sede">Sede</label>
+                            <input class="field-input" id="inp-sede" type="text" placeholder="Ej. Nacional"
+                                autocomplete="off" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros dinámicos -->
+            <div class="card section-gap">
+                <div class="card-header">
+                    <div class="card-header-dot"></div>
+                    <div class="card-header-title">Filtros de búsqueda</div>
+                </div>
+                <div class="card-body">
+                    <div class="filters-grid" id="filters-grid">
+                        <!-- Los multiselects se generarán dinámicamente por JS -->
+                        <div class="empty-state" style="grid-column:1/-1; padding:24px">
+                            <p>Cargando filtros…</p>
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn-secondary" onclick="clearAllFilters()">
+                            Limpiar filtros
+                        </button>
+                        <button class="btn-primary" onclick="applyFilters()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                            Buscar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de resultados (pantalla) -->
+            <div class="results-header">
+                <span class="results-title">Resultados</span>
+                <span class="results-count" id="results-count-label"></span>
+            </div>
+            <div class="table-wrap" id="table-wrap">
+                <table class="data-table" id="data-table">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Código</th>
+                            <th>Nombre del Indicador</th>
+                            <th>Clasificación</th>
+                            <th>Aplica a</th>
+                            <th>Grupo de Riesgo</th>
+                            <th>Fórmula</th>
+                            <th>Meta Unificada</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <circle cx="11" cy="11" r="8" />
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                    </svg>
+                                    <p>Cargando indicadores…</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </main><!-- /main -->
+    </div><!-- /app -->
+
+    <!-- Controles de paginación (generados por JS) -->
+    <div class="pagination-wrap no-print">
+        <div id="pagination-controls" class="pagination-controls"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════════
+     SECCIÓN DE IMPRESIÓN (solo visible al imprimir)
+══════════════════════════════════════════════════════════════════════════ -->
+    <div id="print-section">
+
+        <!-- Tabla principal de impresión -->
+        <table class="print-table" id="print-table">
+            <thead>
+                <!-- ── Encabezado del formato GAS-GCR-F-63 ──────────────────────────
+                   Se REPITE en CADA PÁGINA porque está dentro de <thead>.
+                   NOTA: los datos del prestador ya NO están aquí, para que
+                   no se repitan en hojas intermedias. Solo el logo/título
+                   institucional se repite como identificador de cada hoja.
+                ── -->
+                <tr>
+                    <td colspan="8" style="padding:0; border:none;">
+                        <div class="print-header">
+
+                            <img src="https://clinicaospedalemanizales.com/wp-content/uploads/2022/08/asmetsalud-imagen-destacada.png"
+                                alt="Logo EPS" class="ph-logo" id="ph-logo-img" />
+
+                            <div class="ph-center">
+                                <div class="ph-macro">MACROPROCESO GESTIÓN DE ASEGURAMIENTO EN SALUD</div>
+                                <div class="ph-proceso">PROCESO GESTIÓN DE LA CONTRACIÓN DE LA RED</div>
+                                <div class="ph-ndoc">FORMATO MATRIZ DE INDICADORES CONTRACTUALES ASMET SALUD EPS</div>
+                                <div class="ph-code">GAS-GCR-F-63 Ver 02</div>
+                            </div>
+                            <div class="ph-right">DOCUMENTO<br>CONTROLADO</div>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Cabecera de columnas (repetida en cada página) -->
+                <tr>
+                    <th style="width:18pt">No.</th>
+                    <th style="width:40pt">Código</th>
+                    <th style="width:auto">Nombre del Indicador</th>
+                    <th style="width:50pt">Clasificación</th>
+                    <th style="width:50pt">Aplica a</th>
+                    <th style="width:50pt">Grupo de Riesgo</th>
+                    <th style="width:200pt">Fórmula Unificada</th>
+                    <th style="width:65pt">Meta Unificada</th>
+                </tr>
+            </thead>
+            <tbody id="print-tbody">
+                <!-- Filas inyectadas por JS en triggerPrint() -->
+            </tbody>
+            <tfoot>
+                <!-- tfoot de respaldo (oculto en print por CSS cuando el footer fijo está activo) -->
+                <tr>
+                    <td colspan="8" style="padding:0; border:none;">
+                        <div class="print-tfoot-content">
+                            <div class="pf-sgc">
+                                Elaborado por: Coordinador Operativo Red de Servicios / Revisado por: Profesional
+                                Innovación y OP / Aprobado por: Director de Contratación y Red de Servicios
+                            </div>
+                            <div class="pf-sgc2">
+                                SISTEMA DE GESTION DE CALIDAD — Aprobado en noviembre de 2025
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- ══════════════════════════════════════
+             ÚLTIMA HOJA: Datos del Prestador + Firma
+             Aparece UNA SOLA VEZ, al final del PDF.
+             JS rellena #lp-nombre, #lp-nit, #lp-sede.
+        ══════════════════════════════════════ -->
+        <div class="print-last-page" id="print-last-page">
+
+            <!-- Datos del prestador (solo en última hoja) -->
+            <div class="print-prestador" id="print-prestador-data">
+                <div class="pp-field">
+                    <div class="pp-label">Nombre del Prestador</div>
+                    <div id="pp-nombre">—</div>
+                </div>
+                <div class="pp-field">
+                    <div class="pp-label">NIT</div>
+                    <div id="pp-nit">—</div>
+                </div>
+                <div class="pp-field" style="border-right:none">
+                    <div class="pp-label">Sede</div>
+                    <div id="pp-sede">—</div>
+                </div>
+            </div>
+
+            <!-- Espacio de firmas -->
+            <div class="print-firma-final" id="print-firma-final">
+                <div class="pff-col">
+                    <div class="pff-label">Firma del Representante Legal:</div>
+                    <div class="pff-line" style="margin-top:12mm"></div>
+                </div>
+                <div class="pff-col">
+                    <div class="pff-label">Fecha:</div>
+                    <div class="pff-line" style="margin-top:12mm"></div>
+                </div>
+            </div>
+        </div><!-- /print-last-page -->
+
+    </div><!-- /print-section -->
+
+    <!-- ══════════════════════════════════════════════════════════════════════════
+     PIE DE PÁGINA FIJO AL BORDE INFERIOR (visible solo al imprimir)
+     position:fixed lo ancla al borde de CADA PÁGINA en Chrome/Edge.
+     El margen inferior de @page en styles.html reserva el espacio.
+══════════════════════════════════════════════════════════════════════════ -->
+    <div class="print-page-footer">
+        <div class="pf-line1">
+            Elaborado por: Coordinador Operativo Red de Servicios &nbsp;/&nbsp;
+            Revisado por: Profesional Innovación y OP &nbsp;/&nbsp;
+            Aprobado por: Director de Contratación y Red de Servicios
+        </div>
+        <div class="pf-line2">
+            SISTEMA DE GESTIÓN DE CALIDAD — Aprobado en noviembre de 2025
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════════
+     MODAL POST-IMPRESIÓN
+══════════════════════════════════════════════════════════════════════════ -->
+    <div class="modal-backdrop" id="post-print-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <div>
+                    <div class="modal-title">¡Anexo generado!</div>
+                    <div class="modal-subtitle">¿Qué desea hacer a continuación?</div>
+                </div>
+            </div>
+            <div class="modal-body">
+                El anexo de indicadores contractuales ha sido procesado para impresión.
+                Puede <strong>continuar</strong> para generar un nuevo anexo limpiando todos los datos,
+                o <strong>editar</strong> la selección actual si necesita ajustes.
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-edit" onclick="modalEdit()">Editar selección</button>
+                <button class="btn-modal-continue" onclick="modalContinue()">Continuar (nuevo anexo)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ▶ JS separado: toda la lógica SPA, filtros y generación del PDF -->
+    <?!= include('scripts') ?>
+
+</body>
+
+</html>
